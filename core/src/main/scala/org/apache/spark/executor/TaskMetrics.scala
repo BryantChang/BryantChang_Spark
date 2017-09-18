@@ -50,6 +50,12 @@ class TaskMetrics private[spark] () extends Serializable {
   private val _executorCpuTime = new LongAccumulator
   private val _resultSize = new LongAccumulator
   private val _jvmGCTime = new LongAccumulator
+
+
+
+  private val _jvmGCCount = new LongAccumulator
+
+
   private val _resultSerializationTime = new LongAccumulator
   private val _memoryBytesSpilled = new LongAccumulator
   private val _diskBytesSpilled = new LongAccumulator
@@ -86,6 +92,13 @@ class TaskMetrics private[spark] () extends Serializable {
    * Amount of time the JVM spent in garbage collection while executing this task.
    */
   def jvmGCTime: Long = _jvmGCTime.sum
+
+
+  /**
+   * Count of JVM garbage collection
+   */
+  def jvmGCCount: Long = _jvmGCCount.sum
+
 
   /**
    * Amount of time spent serializing the task result.
@@ -134,6 +147,11 @@ class TaskMetrics private[spark] () extends Serializable {
   private[spark] def setExecutorCpuTime(v: Long): Unit = _executorCpuTime.setValue(v)
   private[spark] def setResultSize(v: Long): Unit = _resultSize.setValue(v)
   private[spark] def setJvmGCTime(v: Long): Unit = _jvmGCTime.setValue(v)
+
+  //gc frequency
+  private[spark] def setJvmGCCount(v: Long): Unit = _jvmGCCount.setValue(v)
+
+
   private[spark] def setResultSerializationTime(v: Long): Unit =
     _resultSerializationTime.setValue(v)
   private[spark] def incMemoryBytesSpilled(v: Long): Unit = _memoryBytesSpilled.add(v)

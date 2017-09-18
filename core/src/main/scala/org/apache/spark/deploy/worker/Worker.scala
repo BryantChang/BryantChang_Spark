@@ -503,6 +503,7 @@ private[deploy] class Worker(
             dirs
           })
           appDirectories(appId) = appLocalDirs
+          logInfo("===========================Start executor============================")
           val manager = new ExecutorRunner(
             appId,
             execId,

@@ -17,8 +17,11 @@
 
 package org.apache.spark.streaming.ui
 
+import java.io.{BufferedWriter, FileWriter, File}
 import java.util.{LinkedHashMap, Map => JMap, Properties}
 import java.util.concurrent.ConcurrentLinkedQueue
+
+import org.apache.spark.internal.Logging
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.{HashMap, Queue}
@@ -28,7 +31,7 @@ import org.apache.spark.streaming.{StreamingContext, Time}
 import org.apache.spark.streaming.scheduler._
 
 private[spark] class StreamingJobProgressListener(ssc: StreamingContext)
-  extends SparkListener with StreamingListener {
+  extends SparkListener with StreamingListener with Logging{
 
   private val waitingBatchUIData = new HashMap[Time, BatchUIData]
   private val runningBatchUIData = new HashMap[Time, BatchUIData]
@@ -116,9 +119,29 @@ private[spark] class StreamingJobProgressListener(ssc: StreamingContext)
         batchTimeToOutputOpIdSparkJobIdPair.remove(removedBatch.batchTime)
       }
       totalCompletedBatches += 1L
-
+      logInfo("12345677899000976===========================")
+      this.flyPrintStats();
       totalProcessedRecords += batchUIData.numRecords
     }
+  }
+
+  def flyPrintStats() {
+    val queuesize = completedBatchUIData.size
+    val td = completedBatchUIData.flatMap(x => x.totalDelay).toArray.reduce((a, b) => a + b)/queuesize
+    val pd = completedBatchUIData.flatMap(x => x.processingDelay).toArray.reduce((a, b) => a + b)/queuesize
+    val sd = completedBatchUIData.flatMap(x => x.schedulingDelay).toArray.reduce((a, b) => a + b)/queuesize
+    logInfo(s"queueSize=${queuesize}")
+
+//    val file = new File("/home/zc/bryantchang/streaming_logs/test.log")
+//    file.createNewFile()
+//    val stream = new FileWriter(file)
+//    val writer = new BufferedWriter(stream)
+//    writer.write("queuesize="+queuesize)
+//    writer.write("receive order,td="+td)
+//    val record = sd + "," + pd + "," + td
+//    writer.write(record)
+//    writer.newLine()
+//    writer.close()
   }
 
   override def onOutputOperationStarted(

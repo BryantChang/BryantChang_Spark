@@ -225,6 +225,11 @@ private[spark] class Executor(
     ManagementFactory.getGarbageCollectorMXBeans.asScala.map(_.getCollectionTime).sum
   }
 
+  /** Returns the total count of this JVM process has happened **/
+  private def computeTotalGcCount() : Long = {
+    ManagementFactory.getGarbageCollectorMXBeans.asScala.map(_.getCollectionCount).sum
+  }
+
   class TaskRunner(
       execBackend: ExecutorBackend,
       private val taskDescription: TaskDescription)
@@ -249,6 +254,10 @@ private[spark] class Executor(
 
     /** How much the JVM process has spent in GC when the task starts to run. */
     @volatile var startGCTime: Long = _
+
+
+    /** How many times the JVM process happens in GC when the task starts to run.**/
+    @volatile var startGCCount: Long = _
 
     /**
      * The task to run. This will be set in run() by deserializing the task binary coming
@@ -299,6 +308,8 @@ private[spark] class Executor(
       var taskStart: Long = 0
       var taskStartCpu: Long = 0
       startGCTime = computeTotalGcTime()
+
+      startGCCount = computeTotalGcCount()
 
       try {
         // Must be set before updateDependencies() is called, in case fetching dependencies
@@ -400,6 +411,9 @@ private[spark] class Executor(
         task.metrics.setExecutorCpuTime(
           (taskFinishCpu - taskStartCpu) - task.executorDeserializeCpuTime)
         task.metrics.setJvmGCTime(computeTotalGcTime() - startGCTime)
+
+        task.metrics.setJvmGCCount(computeTotalGcCount() - startGCCount)
+
         task.metrics.setResultSerializationTime(afterSerialization - beforeSerialization)
 
         // Note: accumulator updates must be collected after TaskMetrics is updated
@@ -728,10 +742,13 @@ private[spark] class Executor(
     val accumUpdates = new ArrayBuffer[(Long, Seq[AccumulatorV2[_, _]])]()
     val curGCTime = computeTotalGcTime()
 
+    val curGCCount = computeTotalGcCount()
+
     for (taskRunner <- runningTasks.values().asScala) {
       if (taskRunner.task != null) {
         taskRunner.task.metrics.mergeShuffleReadMetrics()
         taskRunner.task.metrics.setJvmGCTime(curGCTime - taskRunner.startGCTime)
+        taskRunner.task.metrics.setJvmGCCount(curGCCount - taskRunner.startGCCount)
         accumUpdates += ((taskRunner.taskId, taskRunner.task.metrics.accumulators()))
       }
     }

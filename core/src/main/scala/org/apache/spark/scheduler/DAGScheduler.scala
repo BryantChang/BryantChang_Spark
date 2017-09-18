@@ -943,6 +943,14 @@ class DAGScheduler(
         logDebug("missing: " + missing)
         if (missing.isEmpty) {
           logInfo("Submitting " + stage + " (" + stage.rdd + "), which has no missing parents")
+
+
+          //added codes
+          if(stage.id == 0) {
+            logInfo("=================first stage started==========================")
+          }else {
+            logInfo(s"=================${stage.id}th stage started")
+          }
           submitMissingTasks(stage, jobId.get)
         } else {
           for (parent <- missing) {
@@ -959,7 +967,6 @@ class DAGScheduler(
   /** Called when stage's parents are available and we can now do its task. */
   private def submitMissingTasks(stage: Stage, jobId: Int) {
     logDebug("submitMissingTasks(" + stage + ")")
-
     // First figure out the indexes of partition ids to compute.
     val partitionsToCompute: Seq[Int] = stage.findMissingPartitions()
 
