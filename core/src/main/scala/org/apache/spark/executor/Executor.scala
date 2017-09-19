@@ -412,7 +412,11 @@ private[spark] class Executor(
           (taskFinishCpu - taskStartCpu) - task.executorDeserializeCpuTime)
         task.metrics.setJvmGCTime(computeTotalGcTime() - startGCTime)
 
-        task.metrics.setJvmGCCount(computeTotalGcCount() - startGCCount)
+        val gcCount: Long = computeTotalGcCount() - startGCCount
+        task.metrics.setJvmGCCount(gcCount)
+
+        logInfo(s"======================On stage ${task.stageId}" +
+          s", GC Count: ${gcCount}========================")
 
         task.metrics.setResultSerializationTime(afterSerialization - beforeSerialization)
 
@@ -498,6 +502,7 @@ private[spark] class Executor(
               if (task != null) {
                 task.metrics.setExecutorRunTime(System.currentTimeMillis() - taskStart)
                 task.metrics.setJvmGCTime(computeTotalGcTime() - startGCTime)
+                task.metrics.setJvmGCCount(computeTotalGcCount() - startGCCount)
                 task.collectAccumulatorUpdates(taskFailed = true)
               } else {
                 Seq.empty
@@ -748,7 +753,11 @@ private[spark] class Executor(
       if (taskRunner.task != null) {
         taskRunner.task.metrics.mergeShuffleReadMetrics()
         taskRunner.task.metrics.setJvmGCTime(curGCTime - taskRunner.startGCTime)
-        taskRunner.task.metrics.setJvmGCCount(curGCCount - taskRunner.startGCCount)
+        val gcCount = curGCCount - taskRunner.startGCCount
+        taskRunner.task.metrics.setJvmGCCount(gcCount)
+
+        logInfo(s"================On stage ${taskRunner.task.stageId}, GC Count on HeartBeat:${gcCount}======" +
+          s"=============")
         accumUpdates += ((taskRunner.taskId, taskRunner.task.metrics.accumulators()))
       }
     }
